@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototype — Banc d'optique</title>
+  <style>
+    /* PROTOTYPE JETABLE — interface A validée. */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
+    :root {
+      color-scheme: light;
+      --ink: #16221e;
+      --muted: #65726c;
+      --paper: #f4f1e8;
+      --panel: rgba(255,255,255,.88);
+      --line: #d8ddd7;
+      --accent: #ef6a47;
+      --accent-2: #0d8f80;
+      --ray-1: #ef6545;
+      --ray-2: #168f84;
+      --ray-3: #7367d8;
+      --image: #a83f79;
+      --lens: #2373b8;
+      --grid: rgba(31, 52, 45, .08);
+      --canvas-bg: #fbfcfa;
+      --shadow: 0 18px 50px rgba(35, 49, 43, .10);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { font-family: "DM Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .app { min-height: 100vh; padding: 24px 24px 100px; }
+    .topbar { max-width: 1480px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: white; font: 700 19px Manrope; letter-spacing: -.06em; }
+    .brand h1 { font: 700 clamp(18px, 2vw, 25px) Manrope; margin: 0; letter-spacing: -.035em; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .status-pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; background: var(--panel); color: var(--muted); font-size: 12px; }
+    .status-pill b { color: var(--ink); }
+    .shell { max-width: 1480px; margin: auto; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 300px; }
+    .workspace, .side-panel { border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
+    .workspace { min-width: 0; border-radius: 24px; overflow: hidden; }
+    .canvas-head { min-height: 64px; padding: 13px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .canvas-head h2 { margin: 0; font: 700 16px Manrope; }
+    .canvas-head p { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+    .head-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+    .mode-tabs { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: rgba(13,143,128,.05); }
+    .mode-tab { border: 0; border-radius: 7px; padding: 6px 9px; background: transparent; color: var(--muted); cursor: pointer; font: 600 11px Manrope; }
+    .mode-tab.active { background: var(--ink); color: white; }
+    .preset-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .preset, .ghost-button { border: 1px solid var(--line); background: transparent; border-radius: 9px; padding: 7px 10px; cursor: pointer; font-size: 12px; transition: .18s ease; }
+    .preset:hover, .ghost-button:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    .preset.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .canvas-wrap { position: relative; min-height: 600px; background: var(--canvas-bg); }
+    canvas { display: block; width: 100%; height: 600px; touch-action: none; cursor: crosshair; }
+    .canvas-legend { position: absolute; left: 16px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.88); backdrop-filter: blur(8px); font-size: 11px; color: var(--muted); pointer-events: none; }
+    .canvas-legend.is-hidden { display: none; }
+    .canvas-copy { position: absolute; right: 15px; top: 14px; z-index: 2; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; background: rgba(255,255,255,.88); color: var(--ink); cursor: pointer; font: 600 11px Manrope; box-shadow: 0 3px 10px rgba(0,0,0,.06); }
+    .canvas-copy:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    .canvas-actions { position: absolute; left: 15px; top: 14px; z-index: 2; display: flex; gap: 7px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-line { display: block; width: 17px; border-top: 2px solid; }
+    .side-panel { border-radius: 20px; overflow: hidden; align-self: start; }
+    .panel-section { padding: 17px; border-bottom: 1px solid var(--line); }
+    .panel-section:last-child { border-bottom: 0; }
+    .panel-title { font: 700 12px Manrope; text-transform: uppercase; letter-spacing: .09em; margin: 0 0 14px; color: var(--muted); }
+    .control { margin: 0 0 17px; }
+    .control:last-child { margin-bottom: 0; }
+    .control label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 7px; }
+    .control output { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .manual-value { display: inline-flex; align-items: center; gap: 4px; }
+    .manual-value input { width: 64px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: 700 12px Manrope; font-variant-numeric: tabular-nums; text-align: right; }
+    .manual-value input:focus { outline: 2px solid color-mix(in srgb, var(--accent-2) 35%, transparent); border-color: var(--accent-2); }
+    .manual-value small { color: var(--muted); font-size: 11px; }
+    .align-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 2px; }
+    .align-actions .ghost-button { padding: 7px 6px; font-size: 11px; }
+    input[type="range"] { width: 100%; accent-color: var(--accent-2); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 13px; }
+    .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
+    .switch input { position: absolute; opacity: 0; }
+    .switch span { position: absolute; inset: 0; border-radius: 999px; background: #ccd3cf; cursor: pointer; transition: .18s; }
+    .switch span::after { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: .18s; }
+    .switch input:checked + span { background: var(--accent-2); }
+    .switch input:checked + span::after { transform: translateX(16px); }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric { padding: 10px; border-radius: 10px; background: rgba(13,143,128,.07); }
+    .metric span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 3px; }
+    .metric strong { font: 700 14px Manrope; font-variant-numeric: tabular-nums; }
+    .result { grid-column: 1 / -1; border-left: 3px solid var(--accent); background: rgba(239,106,71,.08); }
+    .result strong { font-size: 13px; }
+    .equation { margin-top: 12px; color: var(--muted); font: 500 13px/1.5 Manrope; text-align: center; overflow-x: auto; }
+    .hint { display: flex; gap: 9px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .hint-icon { width: 21px; height: 21px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 6px; color: var(--accent-2); background: rgba(13,143,128,.1); font-weight: 700; }
+    @media (max-width: 900px) {
+      .app { padding: 14px 12px 90px; }
+      .shell { grid-template-columns: 1fr; }
+      .canvas-head { align-items: flex-start; flex-direction: column; }
+      .preset-row { justify-content: flex-start; }
+      .canvas-wrap { min-height: 450px; }
+      canvas { height: 450px; min-height: 450px; }
+      .status-pill { display: none; }
+    }
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">f′</div>
+        <div><h1>Laboratoire d’optique</h1><p>Lentille mince convergente · prototype interactif</p></div>
+      </div>
+      <div class="status-pill">Mode <b>construction géométrique</b></div>
+    </header>
+
+    <div class="shell">
+      <section class="workspace">
+        <div class="canvas-head">
+          <div><h2>Formation d’une image</h2><p id="mode-description">Déplacez B pour l’objet, ou faites glisser la grille pour recadrer la vue.</p></div>
+          <div class="head-actions">
+            <div class="mode-tabs" role="tablist" aria-label="Mode de simulation">
+              <button class="mode-tab active" type="button" data-mode="classic" role="tab">Classique</button>
+              <button class="mode-tab" type="button" data-mode="infinity" role="tab">Rayons depuis l’infini</button>
+            </div>
+            <div class="preset-row">
+              <button class="preset" data-preset="far">Objet au-delà de 2F</button>
+              <button class="preset" data-preset="twof">Objet à 2F</button>
+              <button class="preset" data-preset="between">Entre F et 2F</button>
+              <button class="preset" data-preset="inside">Entre O et F</button>
+            </div>
+          </div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="optic-canvas" aria-label="Construction géométrique de l'image par une lentille convergente"></canvas>
+          <div class="canvas-actions">
+            <button id="toggle-legend" class="ghost-button" type="button">Masquer la légende</button>
+            <button id="toggle-scale" class="ghost-button" type="button">Masquer l’échelle</button>
+          </div>
+          <input id="show-scale" type="checkbox" checked hidden>
+          <button id="copy-canvas" class="canvas-copy" type="button" title="Copier le schéma au format PNG">⧉&nbsp; Copier le schéma</button>
+          <div class="canvas-legend">
+            <span class="legend-item"><i class="legend-line" style="color:var(--ray-1)"></i> parallèle → F′</span>
+            <span class="legend-item"><i class="legend-line" style="color:var(--ray-2)"></i> centre optique O</span>
+            <span class="legend-item"><i class="legend-line" style="color:var(--ray-3)"></i> par F → parallèle</span>
+            <span class="legend-item">— réel &nbsp; - - prolongement virtuel</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="panel-section">
+          <h3 class="panel-title">Configuration</h3>
+          <input id="infinity-mode" type="checkbox" hidden>
+          <div class="control">
+            <label><span>Distance objet |OA|</span><span class="manual-value"><input id="object-distance-value" type="number" min="3" max="40" step="0.1" value="24" aria-label="Distance objet en centimètres"><small>cm</small></span></label>
+            <input id="object-distance" type="range" min="3" max="40" step="0.1" value="24">
+          </div>
+          <div class="control">
+            <label><span>Taille objet AB</span><span class="manual-value"><input id="object-height-value" type="number" min="1" max="8" step="0.1" value="5" aria-label="Taille de l’objet en centimètres"><small>cm</small></span></label>
+            <input id="object-height" type="range" min="1" max="8" step="0.1" value="5">
+          </div>
+          <div class="control">
+            <label><span>Distance focale f′</span><span class="manual-value"><input id="focal-length-value" type="number" min="4" max="16" step="0.1" value="10" aria-label="Distance focale en centimètres"><small>cm</small></span></label>
+            <input id="focal-length" type="range" min="4" max="16" step="0.1" value="10">
+          </div>
+          <div class="control">
+            <label><span>Diamètre lentille</span><span class="manual-value"><input id="aperture-value" type="number" min="8" max="20" step="0.5" value="16" aria-label="Diamètre de la lentille en centimètres"><small>cm</small></span></label>
+            <input id="aperture" type="range" min="8" max="20" step="0.5" value="16">
+          </div>
+        </section>
+
+        <section id="infinity-controls" class="panel-section" hidden>
+          <h3 class="panel-title">Rayons depuis l’infini</h3>
+          <div class="toggle-row"><span>Rayon axial</span><label class="switch"><input id="infinity-axis" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Parallèle au-dessus</span><label class="switch"><input id="infinity-upper" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Oblique passant par O</span><label class="switch"><input id="infinity-through-o" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Oblique au-dessus</span><label class="switch"><input id="infinity-oblique" type="checkbox" checked><span></span></label></div>
+        </section>
+
+        <section class="panel-section">
+          <h3 class="panel-title">Affichage</h3>
+          <div class="toggle-row"><span>Afficher l’objet</span><label class="switch"><input id="show-object" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Afficher l’image</span><label class="switch"><input id="show-image" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Rayons particuliers</span><label class="switch"><input id="show-rays" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Rayons émergents</span><label class="switch"><input id="show-outgoing" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Faisceau lumineux</span><label class="switch"><input id="show-beam" type="checkbox"><span></span></label></div>
+          <div class="toggle-row"><span>Prolongements virtuels</span><label class="switch"><input id="show-virtual" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Grille et graduations</span><label class="switch"><input id="show-grid" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Repères 2F et 2F′</span><label class="switch"><input id="show-2f" type="checkbox" checked><span></span></label></div>
+          <div class="control" style="margin-top:14px">
+            <label><span>Zoom de la grille</span><span class="manual-value"><input id="zoom-value" type="number" min="60" max="180" step="5" value="100" aria-label="Zoom de la grille en pourcentage"><small>%</small></span></label>
+            <input id="zoom" type="range" min="60" max="180" step="5" value="100">
+          </div>
+          <div class="align-actions">
+            <button id="center-axis" class="ghost-button" type="button" title="Centrer verticalement l’axe optique">Centrer l’axe</button>
+            <button id="center-lens" class="ghost-button" type="button" title="Centrer horizontalement la lentille">Centrer la lentille</button>
+          </div>
+          <button id="reset" class="ghost-button" style="width:100%;margin-top:10px">Réinitialiser</button>
+        </section>
+
+        <section class="panel-section">
+          <h3 class="panel-title">Résultats</h3>
+          <div class="metrics">
+            <div class="metric"><span>Position OA′</span><strong id="image-distance">—</strong></div>
+            <div class="metric"><span>Grandissement γ</span><strong id="magnification">—</strong></div>
+            <div class="metric"><span>Taille A′B′</span><strong id="image-height">—</strong></div>
+            <div class="metric"><span>Vergence C</span><strong id="power">—</strong></div>
+            <div class="metric result"><span>Nature de l’image</span><strong id="image-nature">—</strong></div>
+          </div>
+          <div class="equation">\[
+            \frac{1}{\overline{OA'}} - \frac{1}{\overline{OA}} = \frac{1}{f'}
+            \qquad \gamma = \frac{\overline{A'B'}}{\overline{AB}} = \frac{\overline{OA'}}{\overline{OA}}
+          \]</div>
+        </section>
+
+        <section class="panel-section">
+          <div class="hint"><span class="hint-icon">i</span><span>Les tracés utilisent l’approximation de Gauss : rayons paraxiaux et lentille mince.</span></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const $ = (selector) => document.querySelector(selector);
+      const canvas = $('#optic-canvas');
+      let context = canvas.getContext('2d');
+      const controls = {
+        objectDistance: $('#object-distance'), objectHeight: $('#object-height'),
+        focalLength: $('#focal-length'), aperture: $('#aperture'),
+        infinityMode: $('#infinity-mode'), infinityAxis: $('#infinity-axis'), infinityUpper: $('#infinity-upper'), infinityThroughO: $('#infinity-through-o'), infinityOblique: $('#infinity-oblique'), showObject: $('#show-object'), showImage: $('#show-image'), showRays: $('#show-rays'), showOutgoing: $('#show-outgoing'), showBeam: $('#show-beam'),
+        showVirtual: $('#show-virtual'), showGrid: $('#show-grid'), showScale: $('#show-scale'), show2F: $('#show-2f'), zoom: $('#zoom')
+      };
+      const valueInputs = {
+        objectDistance: $('#object-distance-value'), objectHeight: $('#object-height-value'),
+        focalLength: $('#focal-length-value'), aperture: $('#aperture-value')
+      };
+      const defaultState = { objectDistance: 24, objectHeight: 5, focalLength: 10, aperture: 16 };
+      let state = { ...defaultState };
+      let view = { panX: 0, panY: 0 };
+      let geometry = null;
+      let dragging = false;
+      let panning = false;
+      let panStart = null;
+
+      function setMode(infinity) {
+        controls.infinityMode.checked = infinity;
+        $('#infinity-controls').hidden = !infinity;
+        $('#mode-description').textContent = infinity
+          ? 'Sélectionnez les rayons venant de l’infini ; les points magenta sont dans le plan focal image.'
+          : 'Déplacez B pour l’objet, ou faites glisser la grille pour recadrer la vue.';
+        document.querySelectorAll('[data-mode]').forEach((button) => button.classList.toggle('active', (button.dataset.mode === 'infinity') === infinity));
+        document.querySelectorAll('[data-preset]').forEach((button) => { button.disabled = infinity; });
+        resizeCanvas();
+      }
+
+      function readState() {
+        state.objectDistance = Number(controls.objectDistance.value);
+        state.objectHeight = Number(controls.objectHeight.value);
+        state.focalLength = Number(controls.focalLength.value);
+        state.aperture = Number(controls.aperture.value);
+      }
+
+      function syncControls() {
+        Object.entries(defaultState).forEach(([key]) => { controls[key].value = state[key]; });
+        valueInputs.objectDistance.value = state.objectDistance.toFixed(1);
+        valueInputs.objectHeight.value = state.objectHeight.toFixed(1);
+        valueInputs.focalLength.value = state.focalLength.toFixed(1);
+        valueInputs.aperture.value = state.aperture.toFixed(1);
+        $('#zoom-value').value = controls.zoom.value;
+      }
+
+      function calculateImage() {
+        const objectX = -state.objectDistance;
+        const denominator = 1 / state.focalLength + 1 / objectX;
+        if (Math.abs(denominator) < 0.0005) return { atInfinity: true, x: Infinity, gamma: Infinity, height: Infinity };
+        const x = 1 / denominator;
+        const gamma = x / objectX;
+        return { atInfinity: false, x, gamma, height: gamma * state.objectHeight };
+      }
+
+      function updateMetrics(image) {
+        if (controls.infinityMode.checked) {
+          $('#image-distance').textContent = `+${state.focalLength.toFixed(1)} cm`;
+          $('#magnification').textContent = '—';
+          $('#image-height').textContent = '—';
+          $('#power').textContent = `${(100 / state.focalLength).toFixed(2)} δ`;
+          $('#image-nature').textContent = 'Image réelle dans le plan focal image';
+          return;
+        }
+        $('#image-distance').textContent = image.atInfinity ? '∞' : `${signed(image.x)} cm`;
+        $('#magnification').textContent = image.atInfinity ? '∞' : signed(image.gamma, 2);
+        $('#image-height').textContent = image.atInfinity ? '∞' : `${signed(image.height)} cm`;
+        $('#power').textContent = `${(100 / state.focalLength).toFixed(2)} δ`;
+        let nature = 'Image rejetée à l’infini';
+        if (!image.atInfinity) nature = image.x > 0
+          ? `Réelle · renversée · ${Math.abs(image.gamma) > 1.02 ? 'agrandie' : Math.abs(image.gamma) < .98 ? 'réduite' : 'même taille'}`
+          : `Virtuelle · droite · ${Math.abs(image.gamma) > 1.02 ? 'agrandie' : 'réduite'}`;
+        $('#image-nature').textContent = nature;
+      }
+
+      function signed(value, digits = 1) { return `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(digits)}`; }
+      function css(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+
+      function legendEntries() {
+        const entries = [
+          { label: 'axe optique', color: css('--muted') },
+          { label: 'lentille convergente', color: css('--lens') }
+        ];
+        if (!controls.infinityMode.checked && controls.showObject.checked) entries.push({ label: 'objet', color: css('--ink') });
+        if (!controls.infinityMode.checked && controls.showImage.checked) entries.push({ label: 'image', color: css('--image') });
+        if (controls.infinityMode.checked && controls.showRays.checked) {
+          if (controls.infinityAxis.checked) entries.push({ label: 'rayon axial depuis l’infini', color: css('--ray-2') });
+          if (controls.infinityUpper.checked) entries.push({ label: 'rayon parallèle au-dessus de l’axe', color: css('--ray-1') });
+          if (controls.infinityThroughO.checked) entries.push({ label: 'rayon oblique passant par O', color: css('--ray-3') });
+          if (controls.infinityOblique.checked) entries.push({ label: 'rayon oblique au-dessus', color: css('--accent') });
+          if (controls.showOutgoing.checked) entries.push({ label: 'points image dans le plan focal', color: css('--image') });
+        } else if (controls.showRays.checked) {
+          entries.push({ label: 'parallèle → F′', color: css('--ray-1') });
+          entries.push({ label: 'centre optique O', color: css('--ray-2') });
+          entries.push({ label: 'par F → parallèle', color: css('--ray-3') });
+          if (controls.showVirtual.checked) entries.push({ label: 'prolongement virtuel', color: css('--muted'), dashed: true });
+        }
+        if (!controls.infinityMode.checked && controls.showBeam.checked) entries.push({ label: 'faisceau lumineux', color: css('--accent') });
+        return entries;
+      }
+
+      function renderLegend() {
+        const legend = $('.canvas-legend');
+        legend.replaceChildren(...legendEntries().map((entry) => {
+          const item = document.createElement('span'); item.className = 'legend-item';
+          const swatch = document.createElement('i'); swatch.className = 'legend-line'; swatch.style.color = entry.color;
+          if (entry.dashed) swatch.style.borderTopStyle = 'dashed';
+          item.append(swatch, document.createTextNode(entry.label));
+          return item;
+        }));
+      }
+
+      function addLegendToExport(exportContext, exportCanvas) {
+        if ($('.canvas-legend').classList.contains('is-hidden')) return;
+        const entries = legendEntries();
+        const ratio = exportCanvas.width / canvas.getBoundingClientRect().width;
+        const padding = 10 * ratio, gap = 13 * ratio, marker = 17 * ratio, itemGap = 6 * ratio, rowHeight = 20 * ratio;
+        exportContext.font = `${11 * ratio}px DM Sans, sans-serif`;
+        const maxWidth = exportCanvas.width - 32 * ratio;
+        const rows = [[]]; let rowWidth = 0;
+        entries.forEach((entry) => {
+          const entryWidth = marker + itemGap + exportContext.measureText(entry.label).width;
+          const required = rowWidth ? gap + entryWidth : entryWidth;
+          if (rowWidth && rowWidth + required > maxWidth - padding * 2) { rows.push([]); rowWidth = 0; }
+          rows.at(-1).push({ ...entry, width: entryWidth });
+          rowWidth += rowWidth ? gap + entryWidth : entryWidth;
+        });
+        const contentWidth = Math.max(...rows.map((row) => row.reduce((total, entry) => total + entry.width, 0) + Math.max(0, row.length - 1) * gap));
+        const boxHeight = rows.length * rowHeight + padding * 2;
+        const x = 16 * ratio, y = exportCanvas.height - 14 * ratio - boxHeight;
+        exportContext.save();
+        exportContext.textBaseline = 'middle'; exportContext.fillStyle = css('--muted');
+        rows.forEach((row, rowIndex) => {
+          let cursor = x + padding; const baseline = y + padding + rowHeight * rowIndex + rowHeight / 2;
+          row.forEach((entry, index) => {
+            exportContext.save(); exportContext.strokeStyle = entry.color; exportContext.lineWidth = 2 * ratio;
+            if (entry.dashed) exportContext.setLineDash([4 * ratio, 3 * ratio]);
+            exportContext.beginPath(); exportContext.moveTo(cursor, baseline); exportContext.lineTo(cursor + marker, baseline); exportContext.stroke(); exportContext.restore();
+            exportContext.fillText(entry.label, cursor + marker + itemGap, baseline);
+            cursor += entry.width + (index < row.length - 1 ? gap : 0);
+          });
+        });
+        exportContext.restore();
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const ratio = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = Math.round(rect.width * ratio);
+        canvas.height = Math.round(rect.height * ratio);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        draw(rect.width, rect.height);
+      }
+
+      function draw(width, height, transparentBackground = false) {
+        readState(); syncControls();
+        renderLegend();
+        const image = calculateImage(); updateMetrics(image);
+        context.clearRect(0, 0, width, height);
+        if (!transparentBackground) { context.fillStyle = css('--canvas-bg'); context.fillRect(0, 0, width, height); }
+
+        const axisY = height * .55 + view.panY;
+        const leftMargin = 48, rightMargin = 42;
+        const centeredLensX = width * .5;
+        const lensX = centeredLensX + view.panX;
+        // L'échelle dépend seulement de la taille du canevas et du zoom choisi, jamais de la position de l'objet.
+        const baseScale = Math.min((width - leftMargin - rightMargin) / 88, (height * .74) / 20);
+        const scaleX = baseScale * (Number(controls.zoom.value) / 100);
+        const scaleY = scaleX;
+        const toX = (value) => lensX + value * scaleX;
+        const toY = (value) => axisY - value * scaleY;
+        const objectX = -state.objectDistance;
+        const halfAperture = state.aperture / 2;
+        geometry = { width, height, lensX, axisY, scaleX, scaleY, toX, toY, objectX };
+
+        if (controls.showGrid.checked) drawGrid(width, height, lensX, axisY, scaleX, toX, toY);
+        drawAxis(width, axisY);
+        drawFocalMarkers(toX, axisY);
+        drawLens(lensX, toY(halfAperture), toY(-halfAperture));
+        if (controls.infinityMode.checked && controls.showRays.checked) {
+          drawInfinityRays(toX, toY, width, halfAperture);
+        } else {
+          if (controls.showBeam.checked) drawBeam(image, toX, toY, width, halfAperture);
+          if (controls.showRays.checked) drawSpecialRays(image, toX, toY, width, halfAperture);
+        }
+        if (!controls.infinityMode.checked && controls.showObject.checked) drawArrow(toX(objectX), axisY, toY(state.objectHeight), css('--ink'), 'A', 'B', true);
+        if (!controls.infinityMode.checked && controls.showImage.checked && !image.atInfinity && isFinite(image.x) && Math.abs(image.x) < 85) {
+          drawArrow(toX(image.x), axisY, toY(image.height), css('--image'), 'A′', 'B′', false, image.x < 0);
+        }
+        drawScale(width, height, lensX, axisY, scaleX);
+      }
+
+      function drawGrid(width, height, lensX, axisY, scaleX, toX, toY) {
+        context.save(); context.strokeStyle = css('--grid'); context.lineWidth = .65;
+        const step = scaleX * 5;
+        for (let x = lensX % step; x < width; x += step) line(x, 0, x, height);
+        for (let y = axisY % step; y < height; y += step) line(0, y, width, y);
+        context.restore();
+      }
+
+      function drawAxis(width, axisY) {
+        context.save(); context.strokeStyle = css('--muted'); context.globalAlpha = .75; context.lineWidth = .85;
+        line(20, axisY, width - 20, axisY); arrowHead(width - 20, axisY, 0, css('--muted'), 7);
+        context.restore();
+      }
+
+      function drawFocalMarkers(toX, axisY) {
+        const marks = [[-2 * state.focalLength, '2F'], [-state.focalLength, 'F'], [0, 'O'], [state.focalLength, 'F′'], [2 * state.focalLength, '2F′']];
+        context.save(); context.font = '600 11px DM Sans'; context.textAlign = 'center';
+        marks.forEach(([position, label]) => {
+          if (!controls.show2F.checked && (label === '2F' || label === '2F′')) return;
+          context.strokeStyle = label === 'O' ? css('--lens') : css('--muted'); context.lineWidth = label === 'O' ? 1.35 : .75;
+          line(toX(position), axisY - 5, toX(position), axisY + 5);
+          context.fillStyle = label === 'O' ? css('--lens') : css('--muted');
+          context.fillText(label, toX(position) - (label === 'O' ? 13 : 0), axisY + 21);
+        }); context.restore();
+      }
+
+      function drawLens(x, top, bottom) {
+        const color = css('--lens');
+        context.save(); context.strokeStyle = color; context.fillStyle = color; context.lineWidth = 1.6;
+        // Symbole de lentille convergente : les deux flèches pointent vers l'extérieur.
+        line(x, top, x, bottom);
+        arrowHead(x, top, -Math.PI / 2, color, 7); arrowHead(x, bottom, Math.PI / 2, color, 7);
+        context.restore();
+      }
+
+      function drawArrow(x, axisY, tipY, color, baseLabel, tipLabel, draggable, virtual = false) {
+        context.save(); context.strokeStyle = color; context.fillStyle = color; context.lineWidth = virtual ? 1 : 1.5;
+        if (virtual) context.setLineDash([5, 4]);
+        line(x, axisY, x, tipY); context.setLineDash([]);
+        arrowHead(x, tipY, tipY < axisY ? -Math.PI / 2 : Math.PI / 2, color, 5);
+        context.font = '700 11px DM Sans'; context.textAlign = 'center';
+        context.fillText(baseLabel, x - 11, axisY + 15); context.fillText(tipLabel, x + 12, tipY + (tipY < axisY ? -6 : 14));
+        context.restore();
+      }
+
+      function drawSpecialRays(image, toX, toY, width, halfAperture) {
+        const objectX = -state.objectDistance, objectY = state.objectHeight;
+        const xLeft = -state.objectDistance, xRight = (width - geometry.lensX) / geometry.scaleX;
+        const rays = [
+          { color: css('--ray-1'), lensY: objectY, incomingSlope: 0, outgoingSlope: -objectY / state.focalLength },
+          { color: css('--ray-2'), lensY: 0, incomingSlope: -objectY / (0 - objectX), outgoingSlope: -objectY / (0 - objectX) },
+          { color: css('--ray-3'), lensY: objectY + (0 - objectX) * ((0 - objectY) / (-state.focalLength - objectX)), incomingSlope: null, outgoingSlope: 0 }
+        ];
+        rays.forEach((ray) => {
+          if (!isFinite(ray.lensY) || Math.abs(ray.lensY) > halfAperture) return;
+          context.save(); context.strokeStyle = ray.color; context.lineWidth = 1.15; context.globalAlpha = .96;
+          line(toX(xLeft), toY(objectY), toX(0), toY(ray.lensY));
+          if (controls.showOutgoing.checked) line(toX(0), toY(ray.lensY), toX(xRight), toY(ray.lensY + ray.outgoingSlope * xRight));
+          if (controls.showOutgoing.checked) arrowOnSegment(toX(0), toY(ray.lensY), toX(Math.min(xRight, state.focalLength * .72)), toY(ray.lensY + ray.outgoingSlope * Math.min(xRight, state.focalLength * .72)), ray.color);
+          if (controls.showOutgoing.checked && image.x < 0 && controls.showVirtual.checked) {
+            context.setLineDash([7, 6]); context.globalAlpha = .55;
+            line(toX(0), toY(ray.lensY), toX(Math.max(image.x, -45)), toY(ray.lensY + ray.outgoingSlope * Math.max(image.x, -45)));
+          }
+          context.restore();
+        });
+      }
+
+      function drawInfinityRays(toX, toY, width, halfAperture) {
+        const xLeft = -(geometry.lensX - 20) / geometry.scaleX;
+        const xRight = (width - geometry.lensX - 20) / geometry.scaleX;
+        const upperHeight = Math.min(halfAperture * .6, 4.8);
+        const obliqueHeight = Math.min(halfAperture * .78, 6.2);
+        const rays = [
+          { enabled: controls.infinityAxis.checked, color: css('--ray-2'), lensY: 0, incomingSlope: 0 },
+          { enabled: controls.infinityUpper.checked, color: css('--ray-1'), lensY: upperHeight, incomingSlope: 0 },
+          { enabled: controls.infinityThroughO.checked, color: css('--ray-3'), lensY: 0, incomingSlope: -.12 },
+          { enabled: controls.infinityOblique.checked, color: css('--accent'), lensY: obliqueHeight, incomingSlope: .08 }
+        ];
+        const imagePoints = new Set();
+        rays.forEach((ray) => {
+          if (!ray.enabled) return;
+          const outgoingSlope = ray.incomingSlope - ray.lensY / state.focalLength;
+          const inputY = (x) => ray.lensY + ray.incomingSlope * x;
+          context.save(); context.strokeStyle = ray.color; context.lineWidth = 1.2;
+          line(toX(xLeft), toY(inputY(xLeft)), toX(0), toY(ray.lensY));
+          if (controls.showOutgoing.checked) line(toX(0), toY(ray.lensY), toX(xRight), toY(ray.lensY + outgoingSlope * xRight));
+          arrowOnSegment(toX(xLeft), toY(inputY(xLeft)), toX(0), toY(ray.lensY), ray.color);
+          if (controls.showOutgoing.checked) arrowOnSegment(toX(0), toY(ray.lensY), toX(Math.min(xRight, state.focalLength * 1.25)), toY(ray.lensY + outgoingSlope * Math.min(xRight, state.focalLength * 1.25)), ray.color);
+          context.restore();
+          const imageY = ray.incomingSlope * state.focalLength;
+          const key = imageY.toFixed(3);
+          if (!controls.showOutgoing.checked || imagePoints.has(key)) return;
+          imagePoints.add(key);
+          context.save(); context.fillStyle = css('--image'); context.beginPath(); context.arc(toX(state.focalLength), toY(imageY), 3.3, 0, Math.PI * 2); context.fill(); context.restore();
+        });
+      }
+
+      function drawBeam(image, toX, toY, width, halfAperture) {
+        const objectX = -state.objectDistance, objectY = state.objectHeight;
+        const xRight = (width - geometry.lensX) / geometry.scaleX;
+        context.save(); context.strokeStyle = css('--accent'); context.lineWidth = .65; context.globalAlpha = .20;
+        for (let i = 0; i <= 14; i++) {
+          const lensY = -halfAperture + (2 * halfAperture * i / 14);
+          const incomingSlope = (lensY - objectY) / (0 - objectX);
+          const outgoingSlope = incomingSlope - lensY / state.focalLength;
+          line(toX(objectX), toY(objectY), toX(0), toY(lensY));
+          if (controls.showOutgoing.checked) line(toX(0), toY(lensY), toX(xRight), toY(lensY + outgoingSlope * xRight));
+        }
+        context.restore();
+      }
+
+      function drawScale(width, height, lensX, axisY, scaleX) {
+        if (!controls.showGrid.checked || !controls.showScale.checked) return;
+        const y = height - 35, length = scaleX * 5, x = width - 24 - length;
+        context.save(); context.strokeStyle = css('--muted'); context.fillStyle = css('--muted'); context.lineWidth = .75; context.font = '10px DM Sans'; context.textAlign = 'center';
+        line(x, y, x + length, y); line(x, y - 4, x, y + 4); line(x + length, y - 4, x + length, y + 4); context.fillText('5 cm', x + length / 2, y - 8); context.restore();
+      }
+
+      function line(x1, y1, x2, y2) { context.beginPath(); context.moveTo(x1, y1); context.lineTo(x2, y2); context.stroke(); }
+      function arrowHead(x, y, angle, color, size = 7) {
+        context.save(); context.translate(x, y); context.rotate(angle); context.fillStyle = color; context.beginPath(); context.moveTo(size, 0); context.lineTo(-size * .45, -size * .48); context.lineTo(-size * .45, size * .48); context.closePath(); context.fill(); context.restore();
+      }
+      function arrowOnSegment(x1, y1, x2, y2, color) {
+        const t = .68, x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
+        arrowHead(x, y, Math.atan2(y2 - y1, x2 - x1), color, 4);
+      }
+
+      Object.values(controls).forEach((control) => control.addEventListener('input', resizeCanvas));
+      Object.entries(valueInputs).forEach(([key, input]) => input.addEventListener('change', () => {
+        const range = controls[key];
+        const value = Number(input.value);
+        if (!Number.isFinite(value)) { syncControls(); return; }
+        range.value = Math.max(Number(range.min), Math.min(Number(range.max), value));
+        resizeCanvas();
+      }));
+      $('#zoom-value').addEventListener('change', () => {
+        const input = $('#zoom-value');
+        const value = Number(input.value);
+        if (!Number.isFinite(value)) { syncControls(); return; }
+        controls.zoom.value = Math.max(Number(controls.zoom.min), Math.min(Number(controls.zoom.max), value));
+        resizeCanvas();
+      });
+      $('#reset').addEventListener('click', () => { state = { ...defaultState }; view = { panX: 0, panY: 0 }; controls.zoom.value = 100; syncControls(); resizeCanvas(); });
+      $('#center-axis').addEventListener('click', () => { view.panY = 0; resizeCanvas(); });
+      $('#center-lens').addEventListener('click', () => { view.panX = 0; resizeCanvas(); });
+      document.querySelectorAll('[data-preset]').forEach((button) => button.addEventListener('click', () => {
+        const ratios = { far: 3, twof: 2, between: 1.5, inside: .65 };
+        state.objectDistance = Math.min(40, state.focalLength * ratios[button.dataset.preset]);
+        controls.objectDistance.value = state.objectDistance;
+        document.querySelectorAll('[data-preset]').forEach((item) => item.classList.toggle('active', item === button));
+        resizeCanvas();
+      }));
+      canvas.addEventListener('pointerdown', (event) => {
+        if (!geometry) return;
+        const rect = canvas.getBoundingClientRect();
+        const tipX = geometry.toX(-state.objectDistance), tipY = geometry.toY(state.objectHeight);
+        canvas.setPointerCapture(event.pointerId);
+        if (!controls.infinityMode.checked && controls.showObject.checked && Math.hypot(event.clientX - rect.left - tipX, event.clientY - rect.top - tipY) < 28) {
+          dragging = true;
+        } else {
+          panning = true;
+          panStart = { x: event.clientX, y: event.clientY, panX: view.panX, panY: view.panY };
+        }
+        canvas.style.cursor = 'grabbing';
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        if ((!dragging && !panning) || !geometry) return;
+        if (panning && panStart) {
+          view.panX = panStart.panX + event.clientX - panStart.x;
+          view.panY = panStart.panY + event.clientY - panStart.y;
+          resizeCanvas();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left, y = event.clientY - rect.top;
+        state.objectDistance = Math.max(3, Math.min(40, (geometry.lensX - x) / geometry.scaleX));
+        state.objectHeight = Math.max(1, Math.min(8, (geometry.axisY - y) / geometry.scaleY));
+        controls.objectDistance.value = state.objectDistance; controls.objectHeight.value = state.objectHeight; resizeCanvas();
+      });
+      function stopCanvasDrag() { dragging = false; panning = false; panStart = null; canvas.style.cursor = 'crosshair'; }
+      canvas.addEventListener('pointerup', stopCanvasDrag);
+      canvas.addEventListener('pointercancel', stopCanvasDrag);
+      canvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        const step = event.deltaY < 0 ? 5 : -5;
+        controls.zoom.value = Math.max(Number(controls.zoom.min), Math.min(Number(controls.zoom.max), Number(controls.zoom.value) + step));
+        resizeCanvas();
+      }, { passive: false });
+      $('#toggle-legend').addEventListener('click', () => {
+        const legend = $('.canvas-legend');
+        const hidden = legend.classList.toggle('is-hidden');
+        $('#toggle-legend').textContent = hidden ? 'Afficher la légende' : 'Masquer la légende';
+      });
+      $('#toggle-scale').addEventListener('click', () => {
+        controls.showScale.checked = !controls.showScale.checked;
+        $('#toggle-scale').textContent = controls.showScale.checked ? 'Masquer l’échelle' : 'Afficher l’échelle';
+        resizeCanvas();
+      });
+      function cropCanvasToContent(source) {
+        const sourceContext = source.getContext('2d');
+        const { data, width, height } = sourceContext.getImageData(0, 0, source.width, source.height);
+        let minX = width, minY = height, maxX = -1, maxY = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (data[(y * width + x) * 4 + 3] < 8) continue;
+            minX = Math.min(minX, x); minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+          }
+        }
+        if (maxX < 0) return source;
+        const padding = Math.round((source.width / canvas.getBoundingClientRect().width) * 10);
+        minX = Math.max(0, minX - padding); minY = Math.max(0, minY - padding);
+        maxX = Math.min(width - 1, maxX + padding); maxY = Math.min(height - 1, maxY + padding);
+        const cropped = document.createElement('canvas');
+        cropped.width = maxX - minX + 1; cropped.height = maxY - minY + 1;
+        cropped.getContext('2d').drawImage(source, minX, minY, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height);
+        return cropped;
+      }
+      let copyFeedbackTimer;
+      $('#copy-canvas').addEventListener('click', async () => {
+        const button = $('#copy-canvas');
+        const restoreLabel = () => { button.innerHTML = '⧉&nbsp; Copier le schéma'; };
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = canvas.width; exportCanvas.height = canvas.height;
+        const exportContext = exportCanvas.getContext('2d');
+        const displayContext = context;
+        const rect = canvas.getBoundingClientRect();
+        const ratio = canvas.width / rect.width;
+        context = exportContext;
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        draw(rect.width, rect.height, true);
+        context = displayContext;
+        addLegendToExport(exportContext, exportCanvas);
+        const croppedCanvas = cropCanvasToContent(exportCanvas);
+        const blob = await new Promise((resolve) => croppedCanvas.toBlob(resolve, 'image/png'));
+        if (!blob) return;
+        try {
+          if (!navigator.clipboard || typeof ClipboardItem === 'undefined') throw new Error('Clipboard PNG indisponible');
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          button.textContent = '✓ Copié dans le presse-papiers';
+        } catch {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url; link.download = 'schema-optique.png'; link.click();
+          URL.revokeObjectURL(url);
+          button.textContent = '↓ PNG téléchargé';
+        }
+        clearTimeout(copyFeedbackTimer);
+        copyFeedbackTimer = setTimeout(restoreLabel, 2200);
+      });
+      document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode === 'infinity')));
+      addEventListener('resize', resizeCanvas);
+      setMode(false); syncControls();
+    })();
+  </script>
+</body>
+</html>
