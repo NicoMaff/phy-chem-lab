@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
+Specs and tickets are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -13,14 +13,12 @@ Issues and specifications for this repository live as GitHub issues. Use the `gh
 
 ## Specification and ticket workflow
 
-- When `/to-spec` creates a specification, add the `spec` label and set its status to `Backlog`.
-- When `/to-tickets` creates tickets, add the `ticket` label, set each ticket to `Ready`, and link it to its specification as a GitHub sub-issue. Keep an annotation in each ticket body identifying its parent specification.
-- Once every ticket has been created and linked, set the parent specification to `Ready`.
-- Add a native GitHub `Blocked by` relationship only when a ticket genuinely depends on another ticket. Keep useful dependency annotations in issue bodies as well.
-- When `/implement` starts, set both the ticket and its parent specification to `In Progress`.
-- When creating a pull request, include `Closes #<ticket-number>` in its body and set the ticket to `In Review`.
-- After a pull request is merged, set its ticket to `Done`. Set the parent specification to `Done` only when all of its sub-issues are `Done`.
-- If a pull request closes without merging, return its ticket to `In Progress`.
+- Use GitHub Issues for specifications and tickets.
+- When `to-spec` creates a specification, add the `spec` label.
+- When `to-tickets` creates a ticket, add the `ticket` label and link it to its specification as a native GitHub sub-issue. Keep an annotation in the ticket body identifying its parent specification.
+- Add a native GitHub `Blocked by` relationship only when a ticket genuinely depends on another ticket. Keep useful relationship annotations in issue bodies as well.
+- When creating a pull request for a ticket, include `Closes #<ticket-number>` in its body.
+- When that pull request closes the final open sub-issue of a specification, close the parent `spec` issue as well.
 
 ## Pull requests as a triage surface
 
