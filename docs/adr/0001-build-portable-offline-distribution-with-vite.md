@@ -1,0 +1,3 @@
+# Build a portable offline distribution with Vite
+
+PhyChem Lab uses Vite and TypeScript to keep its sources modular while producing a `dist/` directory that can be copied to removable storage and opened from its `index.html` without installation, a local server, or an internet connection. Relative paths, bundled local assets, and direct `file://` verification are required because portability is a product constraint rather than an optional deployment mode. Volta pins the Node.js toolchain used by development and CI, while the exact modern Yarn version is pinned through the `packageManager` field and provided through Corepack.
