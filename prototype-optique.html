@@ -28,7 +28,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body { font-family: "DM Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); }
-    button, input { font: inherit; }
+    button, input, select { font: inherit; }
     button { color: inherit; }
     .app { min-height: 100vh; padding: 24px 24px 100px; }
     .topbar { max-width: 1480px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -75,6 +75,18 @@
     .manual-value small { color: var(--muted); font-size: 11px; }
     .align-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 2px; }
     .align-actions .ghost-button { padding: 7px 6px; font-size: 11px; }
+    .ray-builder { display: grid; gap: 9px; }
+    .ray-builder label { display: grid; gap: 5px; color: var(--muted); font: 600 11px Manrope; }
+    .ray-builder select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; background: white; color: var(--ink); }
+    .ray-builder-actions { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+    .ray-builder-actions .ghost-button { padding: 8px; font-size: 11px; }
+    .ray-list { display: grid; gap: 6px; margin-top: 12px; }
+    .ray-list:empty { display: none; }
+    .ray-chip { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(13,143,128,.045); color: var(--muted); font-size: 11px; }
+    .ray-chip i { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--ray-color); }
+    .ray-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ray-chip button { margin-left: auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
+    .ray-chip button:hover { color: var(--accent); }
     input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 13px; }
     .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
@@ -172,10 +184,27 @@
 
         <section id="infinity-controls" class="panel-section" hidden>
           <h3 class="panel-title">Rayons depuis l’infini</h3>
-          <div class="toggle-row"><span>Rayon axial</span><label class="switch"><input id="infinity-axis" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Parallèle au-dessus</span><label class="switch"><input id="infinity-upper" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Oblique passant par O</span><label class="switch"><input id="infinity-through-o" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Oblique au-dessus</span><label class="switch"><input id="infinity-oblique" type="checkbox" checked><span></span></label></div>
+          <div class="ray-builder">
+            <label>Point à l’infini
+              <select id="infinity-ray-origin" aria-label="Point à l’infini d’où vient le rayon">
+                <option value="A">∞A · point sur l’axe</option>
+                <option value="B">∞B · point hors axe</option>
+              </select>
+            </label>
+            <label>Direction incidente
+              <select id="infinity-ray-direction" aria-label="Direction du rayon incident">
+                <option value="parallel">Parallèle à l’axe optique</option>
+                <option value="oblique">Oblique vers son point image</option>
+                <option value="optical-center">Par le centre optique O · sans déviation</option>
+              </select>
+            </label>
+            <div class="ray-builder-actions">
+              <button id="add-infinity-ray" class="ghost-button" type="button">+ Ajouter un rayon aléatoire</button>
+              <button id="clear-infinity-rays" class="ghost-button" type="button" title="Supprimer tous les rayons ajoutés">Effacer</button>
+            </div>
+          </div>
+          <div id="infinity-ray-list" class="ray-list" aria-live="polite"></div>
+          <div class="hint" style="margin-top:12px"><span class="hint-icon">i</span><span>Un faisceau parallèle converge en F′. Un faisceau oblique issu du même point à l’infini converge vers son propre point image dans le plan focal. Un rayon par O ne subit aucune déviation.</span></div>
         </section>
 
         <section class="panel-section">
@@ -229,7 +258,7 @@
       const controls = {
         objectDistance: $('#object-distance'), objectHeight: $('#object-height'),
         focalLength: $('#focal-length'), aperture: $('#aperture'),
-        infinityMode: $('#infinity-mode'), infinityAxis: $('#infinity-axis'), infinityUpper: $('#infinity-upper'), infinityThroughO: $('#infinity-through-o'), infinityOblique: $('#infinity-oblique'), showObject: $('#show-object'), showImage: $('#show-image'), showRays: $('#show-rays'), showOutgoing: $('#show-outgoing'), showBeam: $('#show-beam'),
+        infinityMode: $('#infinity-mode'), infinityRayOrigin: $('#infinity-ray-origin'), infinityRayDirection: $('#infinity-ray-direction'), showObject: $('#show-object'), showImage: $('#show-image'), showRays: $('#show-rays'), showOutgoing: $('#show-outgoing'), showBeam: $('#show-beam'),
         showVirtual: $('#show-virtual'), showGrid: $('#show-grid'), showScale: $('#show-scale'), show2F: $('#show-2f'), zoom: $('#zoom')
       };
       const valueInputs = {
@@ -240,6 +269,9 @@
       let state = { ...defaultState };
       let view = { panX: 0, panY: 0 };
       let geometry = null;
+      let infinityRays = [];
+      let infinityRayId = 0;
+      let nextRaySide = 1;
       let dragging = false;
       let panning = false;
       let panStart = null;
@@ -248,7 +280,7 @@
         controls.infinityMode.checked = infinity;
         $('#infinity-controls').hidden = !infinity;
         $('#mode-description').textContent = infinity
-          ? 'Sélectionnez les rayons venant de l’infini ; les points magenta sont dans le plan focal image.'
+          ? 'Ajoutez des rayons issus de ∞A ou ∞B ; les points magenta sont dans le plan focal image.'
           : 'Déplacez B pour l’objet, ou faites glisser la grille pour recadrer la vue.';
         document.querySelectorAll('[data-mode]').forEach((button) => button.classList.toggle('active', (button.dataset.mode === 'infinity') === infinity));
         document.querySelectorAll('[data-preset]').forEach((button) => { button.disabled = infinity; });
@@ -311,17 +343,14 @@
         if (!controls.infinityMode.checked && controls.showObject.checked) entries.push({ label: 'objet', color: css('--ink') });
         if (!controls.infinityMode.checked && controls.showImage.checked) entries.push({ label: 'image', color: css('--image') });
         if (controls.infinityMode.checked && controls.showRays.checked) {
-          if (controls.infinityAxis.checked) entries.push({ label: 'rayon axial depuis l’infini', color: css('--ray-2') });
-          if (controls.infinityUpper.checked) entries.push({ label: 'rayon parallèle au-dessus de l’axe', color: css('--ray-1') });
-          if (controls.infinityThroughO.checked) entries.push({ label: 'rayon oblique passant par O', color: css('--ray-3') });
-          if (controls.infinityOblique.checked) entries.push({ label: 'rayon oblique au-dessus', color: css('--accent') });
-          if (controls.showOutgoing.checked) entries.push({ label: 'points image dans le plan focal', color: css('--image') });
+          infinityRays.forEach((ray) => entries.push({ label: ray.label, color: ray.color }));
         } else if (controls.showRays.checked) {
           entries.push({ label: 'parallèle → F′', color: css('--ray-1') });
           entries.push({ label: 'centre optique O', color: css('--ray-2') });
           entries.push({ label: 'par F → parallèle', color: css('--ray-3') });
           if (controls.showVirtual.checked) entries.push({ label: 'prolongement virtuel', color: css('--muted'), dashed: true });
         }
+        if (controls.infinityMode.checked && controls.showImage.checked) entries.push({ label: 'image réelle dans le plan focal', color: css('--image') });
         if (!controls.infinityMode.checked && controls.showBeam.checked) entries.push({ label: 'faisceau lumineux', color: css('--accent') });
         return entries;
       }
@@ -381,6 +410,7 @@
 
       function draw(width, height, transparentBackground = false) {
         readState(); syncControls();
+        renderInfinityRayList();
         renderLegend();
         const image = calculateImage(); updateMetrics(image);
         context.clearRect(0, 0, width, height);
@@ -410,6 +440,7 @@
           if (controls.showBeam.checked) drawBeam(image, toX, toY, width, halfAperture);
           if (controls.showRays.checked) drawSpecialRays(image, toX, toY, width, halfAperture);
         }
+        if (controls.infinityMode.checked && controls.showImage.checked) drawInfinityImage(toX, toY);
         if (!controls.infinityMode.checked && controls.showObject.checked) drawArrow(toX(objectX), axisY, toY(state.objectHeight), css('--ink'), 'A', 'B', true);
         if (!controls.infinityMode.checked && controls.showImage.checked && !image.atInfinity && isFinite(image.x) && Math.abs(image.x) < 85) {
           drawArrow(toX(image.x), axisY, toY(image.height), css('--image'), 'A′', 'B′', false, image.x < 0);
@@ -484,20 +515,62 @@
         });
       }
 
+      function createInfinityRay() {
+        const origin = controls.infinityRayOrigin.value;
+        const direction = controls.infinityRayDirection.value;
+        const parallelToAxis = direction === 'parallel';
+        const passesThroughOpticalCenter = direction === 'optical-center';
+        const halfAperture = state.aperture / 2;
+        const sourceColors = { A: css('--ray-1'), B: css('--ray-2') };
+        const id = ++infinityRayId;
+        // Pour un même point à l'infini, la pente incidente est commune à tout le faisceau.
+        // La relation de conjugaison de la lentille garantit alors une unique image dans le plan focal.
+        const incomingSlope = parallelToAxis ? 0 : (origin === 'A' ? .11 : -.11);
+        let lensY;
+        if (passesThroughOpticalCenter) {
+          lensY = 0;
+        } else {
+          // L'alternance rend chaque faisceau lisible : haut, bas, haut, bas, etc.
+          const height = (.18 + Math.random() * .62) * halfAperture;
+          lensY = nextRaySide * height;
+          nextRaySide *= -1;
+        }
+        const construction = parallelToAxis
+          ? 'parallèle → F′'
+          : passesThroughOpticalCenter
+            ? `par O, non dévié · ${incomingSlope > 0 ? 'bas → haut' : 'haut → bas'}`
+            : `oblique → ${origin}′`;
+        return {
+          id,
+          origin,
+          parallelToAxis,
+          lensY,
+          incomingSlope,
+          passesThroughOpticalCenter,
+          color: sourceColors[origin],
+          label: `rayon ${id} · ∞${origin} · ${construction}`
+        };
+      }
+
+      function renderInfinityRayList() {
+        const list = $('#infinity-ray-list');
+        list.replaceChildren(...infinityRays.map((ray) => {
+          const item = document.createElement('div');
+          item.className = 'ray-chip'; item.style.setProperty('--ray-color', ray.color);
+          const marker = document.createElement('i');
+          const label = document.createElement('span'); label.textContent = ray.label;
+          const remove = document.createElement('button'); remove.type = 'button'; remove.title = `Supprimer le rayon ${ray.id}`; remove.setAttribute('aria-label', remove.title); remove.textContent = '×';
+          remove.addEventListener('click', () => { infinityRays = infinityRays.filter((itemRay) => itemRay.id !== ray.id); resizeCanvas(); });
+          item.append(marker, label, remove);
+          return item;
+        }));
+      }
+
       function drawInfinityRays(toX, toY, width, halfAperture) {
         const xLeft = -(geometry.lensX - 20) / geometry.scaleX;
         const xRight = (width - geometry.lensX - 20) / geometry.scaleX;
-        const upperHeight = Math.min(halfAperture * .6, 4.8);
-        const obliqueHeight = Math.min(halfAperture * .78, 6.2);
-        const rays = [
-          { enabled: controls.infinityAxis.checked, color: css('--ray-2'), lensY: 0, incomingSlope: 0 },
-          { enabled: controls.infinityUpper.checked, color: css('--ray-1'), lensY: upperHeight, incomingSlope: 0 },
-          { enabled: controls.infinityThroughO.checked, color: css('--ray-3'), lensY: 0, incomingSlope: -.12 },
-          { enabled: controls.infinityOblique.checked, color: css('--accent'), lensY: obliqueHeight, incomingSlope: .08 }
-        ];
-        const imagePoints = new Set();
-        rays.forEach((ray) => {
-          if (!ray.enabled) return;
+        infinityRays.forEach((ray) => {
+          if (Math.abs(ray.lensY) > halfAperture) return;
           const outgoingSlope = ray.incomingSlope - ray.lensY / state.focalLength;
           const inputY = (x) => ray.lensY + ray.incomingSlope * x;
           context.save(); context.strokeStyle = ray.color; context.lineWidth = 1.2;
@@ -506,11 +579,34 @@
           arrowOnSegment(toX(xLeft), toY(inputY(xLeft)), toX(0), toY(ray.lensY), ray.color);
           if (controls.showOutgoing.checked) arrowOnSegment(toX(0), toY(ray.lensY), toX(Math.min(xRight, state.focalLength * 1.25)), toY(ray.lensY + outgoingSlope * Math.min(xRight, state.focalLength * 1.25)), ray.color);
           context.restore();
-          const imageY = ray.incomingSlope * state.focalLength;
-          const key = imageY.toFixed(3);
-          if (!controls.showOutgoing.checked || imagePoints.has(key)) return;
-          imagePoints.add(key);
-          context.save(); context.fillStyle = css('--image'); context.beginPath(); context.arc(toX(state.focalLength), toY(imageY), 3.3, 0, Math.PI * 2); context.fill(); context.restore();
+        });
+      }
+
+      function infinityImageByOrigin() {
+        const images = new Map();
+        infinityRays.forEach((ray) => {
+          if (images.has(ray.origin)) return;
+          images.set(ray.origin, { origin: ray.origin, y: ray.incomingSlope * state.focalLength });
+        });
+        return images;
+      }
+
+      function drawInfinityImage(toX, toY) {
+        const images = infinityImageByOrigin();
+        const imageA = images.get('A');
+        const imageB = images.get('B');
+        if (!imageA && !imageB) return;
+        const imageX = toX(state.focalLength);
+        if (imageA && imageB && Math.abs(imageA.y - imageB.y) > .01) {
+          drawArrow(imageX, toY(imageA.y), toY(imageB.y), css('--image'), 'A′', 'B′', false);
+          return;
+        }
+        [imageA, imageB].filter(Boolean).forEach((imagePoint, index) => {
+          context.save(); context.fillStyle = css('--image');
+          context.beginPath(); context.arc(imageX, toY(imagePoint.y), 3.3, 0, Math.PI * 2); context.fill();
+          context.font = '700 11px DM Sans'; context.textAlign = 'left';
+          context.fillText(`${imagePoint.origin}′`, imageX + 7, toY(imagePoint.y) - 6 - index * 13);
+          context.restore();
         });
       }
 
@@ -545,6 +641,8 @@
       }
 
       Object.values(controls).forEach((control) => control.addEventListener('input', resizeCanvas));
+      $('#add-infinity-ray').addEventListener('click', () => { infinityRays.push(createInfinityRay()); resizeCanvas(); });
+      $('#clear-infinity-rays').addEventListener('click', () => { infinityRays = []; nextRaySide = 1; resizeCanvas(); });
       Object.entries(valueInputs).forEach(([key, input]) => input.addEventListener('change', () => {
         const range = controls[key];
         const value = Number(input.value);
@@ -559,7 +657,7 @@
         controls.zoom.value = Math.max(Number(controls.zoom.min), Math.min(Number(controls.zoom.max), value));
         resizeCanvas();
       });
-      $('#reset').addEventListener('click', () => { state = { ...defaultState }; view = { panX: 0, panY: 0 }; controls.zoom.value = 100; syncControls(); resizeCanvas(); });
+      $('#reset').addEventListener('click', () => { state = { ...defaultState }; infinityRays = []; infinityRayId = 0; nextRaySide = 1; view = { panX: 0, panY: 0 }; controls.zoom.value = 100; syncControls(); resizeCanvas(); });
       $('#center-axis').addEventListener('click', () => { view.panY = 0; resizeCanvas(); });
       $('#center-lens').addEventListener('click', () => { view.panX = 0; resizeCanvas(); });
       document.querySelectorAll('[data-preset]').forEach((button) => button.addEventListener('click', () => {
