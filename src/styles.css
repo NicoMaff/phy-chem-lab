@@ -17,3 +17,37 @@ main {
 h1 {
   margin-top: 0;
 }
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+a {
+  color: #125e54;
+}
+
+.catalog-link,
+.back-link {
+  font-weight: 700;
+}
+
+article,
+.empty-catalog {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #b9c7c1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+
+article h2 {
+  margin-top: 0;
+}
+
+.pedagogical-model {
+  margin-bottom: 0;
+  color: #475953;
+}

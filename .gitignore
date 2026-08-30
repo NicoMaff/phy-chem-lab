@@ -14,11 +14,14 @@ logs/
 
 # Dependencies
 node_modules/
+.yarn/cache/
+.yarn/install-state.gz
 
 # Build output
 dist/
 build/
 coverage/
+test-results/
 
 # Environment files
 .env
