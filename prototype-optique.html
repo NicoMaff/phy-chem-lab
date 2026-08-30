@@ -3,33 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Prototype — Banc d'optique</title>
+  <meta name="description" content="Module enseignant de construction des rayons lumineux.">
+  <title>Construction des rayons lumineux — PhyChem Lab</title>
+  <link rel="stylesheet" href="/src/styles.css">
   <style>
-    /* PROTOTYPE JETABLE — interface A validée. */
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap');
-    :root {
-      color-scheme: light;
-      --ink: #16221e;
-      --muted: #65726c;
-      --paper: #f4f1e8;
-      --panel: rgba(255,255,255,.88);
-      --line: #d8ddd7;
-      --accent: #ef6a47;
-      --accent-2: #0d8f80;
-      --ray-1: #ef6545;
-      --ray-2: #168f84;
-      --ray-3: #7367d8;
-      --image: #a83f79;
-      --lens: #2373b8;
-      --grid: rgba(31, 52, 45, .08);
-      --canvas-bg: #fbfcfa;
-      --shadow: 0 18px 50px rgba(35, 49, 43, .10);
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
-    body { font-family: "DM Sans", system-ui, sans-serif; background: var(--paper); color: var(--ink); }
-    button, input, select { font: inherit; }
-    button { color: inherit; }
     .app { min-height: 100vh; padding: 24px 24px 100px; }
     .topbar { max-width: 1480px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
     .brand { display: flex; align-items: center; gap: 12px; }
@@ -39,7 +16,6 @@
     .status-pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; background: var(--panel); color: var(--muted); font-size: 12px; }
     .status-pill b { color: var(--ink); }
     .shell { max-width: 1480px; margin: auto; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 300px; }
-    .workspace, .side-panel { border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
     .workspace { min-width: 0; border-radius: 24px; overflow: hidden; }
     .canvas-head { min-height: 64px; padding: 13px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .canvas-head h2 { margin: 0; font: 700 16px Manrope; }
@@ -49,7 +25,7 @@
     .mode-tab { border: 0; border-radius: 7px; padding: 6px 9px; background: transparent; color: var(--muted); cursor: pointer; font: 600 11px Manrope; }
     .mode-tab.active { background: var(--ink); color: white; }
     .preset-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-    .preset, .ghost-button { border: 1px solid var(--line); background: transparent; border-radius: 9px; padding: 7px 10px; cursor: pointer; font-size: 12px; transition: .18s ease; }
+    .preset, .ghost-button { font-size: 12px; }
     .preset:hover, .ghost-button:hover { border-color: var(--accent-2); color: var(--accent-2); }
     .preset.active { background: var(--ink); color: white; border-color: var(--ink); }
     .canvas-wrap { position: relative; min-height: 600px; background: var(--canvas-bg); }
@@ -62,8 +38,6 @@
     .legend-item { display: flex; align-items: center; gap: 6px; }
     .legend-line { display: block; width: 17px; border-top: 2px solid; }
     .side-panel { border-radius: 20px; overflow: hidden; align-self: start; }
-    .panel-section { padding: 17px; border-bottom: 1px solid var(--line); }
-    .panel-section:last-child { border-bottom: 0; }
     .panel-title { font: 700 12px Manrope; text-transform: uppercase; letter-spacing: .09em; margin: 0 0 14px; color: var(--muted); }
     .control { margin: 0 0 17px; }
     .control:last-child { margin-bottom: 0; }
@@ -89,12 +63,6 @@
     .ray-chip button:hover { color: var(--accent); }
     input[type="range"] { width: 100%; accent-color: var(--accent-2); }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 13px; }
-    .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
-    .switch input { position: absolute; opacity: 0; }
-    .switch span { position: absolute; inset: 0; border-radius: 999px; background: #ccd3cf; cursor: pointer; transition: .18s; }
-    .switch span::after { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: .18s; }
-    .switch input:checked + span { background: var(--accent-2); }
-    .switch input:checked + span::after { transform: translateX(16px); }
     .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .metric { padding: 10px; border-radius: 10px; background: rgba(13,143,128,.07); }
     .metric span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 3px; }
@@ -114,20 +82,19 @@
       .status-pill { display: none; }
     }
   </style>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
 <body>
   <main class="app">
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark">f′</div>
-        <div><h1>Laboratoire d’optique</h1><p>Lentille mince convergente · prototype interactif</p></div>
+        <div><h1>Construction des rayons lumineux</h1><p>Module enseignant · lentille mince convergente</p></div>
       </div>
       <div class="status-pill">Mode <b>construction géométrique</b></div>
     </header>
 
     <div class="shell">
-      <section class="workspace">
+      <section class="workspace shared-surface">
         <div class="canvas-head">
           <div><h2>Formation d’une image</h2><p id="mode-description">Déplacez B pour l’objet, ou faites glisser la grille pour recadrer la vue.</p></div>
           <div class="head-actions">
@@ -136,18 +103,18 @@
               <button class="mode-tab" type="button" data-mode="infinity" role="tab">Rayons depuis l’infini</button>
             </div>
             <div class="preset-row">
-              <button class="preset" data-preset="far">Objet au-delà de 2F</button>
-              <button class="preset" data-preset="twof">Objet à 2F</button>
-              <button class="preset" data-preset="between">Entre F et 2F</button>
-              <button class="preset" data-preset="inside">Entre O et F</button>
+              <button class="preset shared-button" data-preset="far">Objet au-delà de 2F</button>
+              <button class="preset shared-button" data-preset="twof">Objet à 2F</button>
+              <button class="preset shared-button" data-preset="between">Entre F et 2F</button>
+              <button class="preset shared-button" data-preset="inside">Entre O et F</button>
             </div>
           </div>
         </div>
         <div class="canvas-wrap">
           <canvas id="optic-canvas" aria-label="Construction géométrique de l'image par une lentille convergente"></canvas>
           <div class="canvas-actions">
-            <button id="toggle-legend" class="ghost-button" type="button">Masquer la légende</button>
-            <button id="toggle-scale" class="ghost-button" type="button">Masquer l’échelle</button>
+            <button id="toggle-legend" class="ghost-button shared-button" type="button">Masquer la légende</button>
+            <button id="toggle-scale" class="ghost-button shared-button" type="button">Masquer l’échelle</button>
           </div>
           <input id="show-scale" type="checkbox" checked hidden>
           <button id="copy-canvas" class="canvas-copy" type="button" title="Copier le schéma au format PNG">⧉&nbsp; Copier le schéma</button>
@@ -160,8 +127,8 @@
         </div>
       </section>
 
-      <aside class="side-panel">
-        <section class="panel-section">
+      <aside class="side-panel shared-surface">
+        <section class="panel-section shared-panel-section">
           <h3 class="panel-title">Configuration</h3>
           <input id="infinity-mode" type="checkbox" hidden>
           <div class="control">
@@ -182,7 +149,7 @@
           </div>
         </section>
 
-        <section id="infinity-controls" class="panel-section" hidden>
+        <section id="infinity-controls" class="panel-section shared-panel-section" hidden>
           <h3 class="panel-title">Rayons depuis l’infini</h3>
           <div class="ray-builder">
             <label>Point à l’infini
@@ -199,36 +166,36 @@
               </select>
             </label>
             <div class="ray-builder-actions">
-              <button id="add-infinity-ray" class="ghost-button" type="button">+ Ajouter un rayon aléatoire</button>
-              <button id="clear-infinity-rays" class="ghost-button" type="button" title="Supprimer tous les rayons ajoutés">Effacer</button>
+              <button id="add-infinity-ray" class="ghost-button shared-button" type="button">+ Ajouter un rayon aléatoire</button>
+              <button id="clear-infinity-rays" class="ghost-button shared-button" type="button" title="Supprimer tous les rayons ajoutés">Effacer</button>
             </div>
           </div>
           <div id="infinity-ray-list" class="ray-list" aria-live="polite"></div>
           <div class="hint" style="margin-top:12px"><span class="hint-icon">i</span><span>Un faisceau parallèle converge en F′. Un faisceau oblique issu du même point à l’infini converge vers son propre point image dans le plan focal. Un rayon par O ne subit aucune déviation.</span></div>
         </section>
 
-        <section class="panel-section">
+        <section class="panel-section shared-panel-section">
           <h3 class="panel-title">Affichage</h3>
-          <div class="toggle-row"><span>Afficher l’objet</span><label class="switch"><input id="show-object" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Afficher l’image</span><label class="switch"><input id="show-image" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Rayons particuliers</span><label class="switch"><input id="show-rays" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Rayons émergents</span><label class="switch"><input id="show-outgoing" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Faisceau lumineux</span><label class="switch"><input id="show-beam" type="checkbox"><span></span></label></div>
-          <div class="toggle-row"><span>Prolongements virtuels</span><label class="switch"><input id="show-virtual" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Grille et graduations</span><label class="switch"><input id="show-grid" type="checkbox" checked><span></span></label></div>
-          <div class="toggle-row"><span>Repères 2F et 2F′</span><label class="switch"><input id="show-2f" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Afficher l’objet</span><label class="switch shared-switch"><input id="show-object" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Afficher l’image</span><label class="switch shared-switch"><input id="show-image" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Rayons particuliers</span><label class="switch shared-switch"><input id="show-rays" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Rayons émergents</span><label class="switch shared-switch"><input id="show-outgoing" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Faisceau lumineux</span><label class="switch shared-switch"><input id="show-beam" type="checkbox"><span></span></label></div>
+          <div class="toggle-row"><span>Prolongements virtuels</span><label class="switch shared-switch"><input id="show-virtual" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Grille et graduations</span><label class="switch shared-switch"><input id="show-grid" type="checkbox" checked><span></span></label></div>
+          <div class="toggle-row"><span>Repères 2F et 2F′</span><label class="switch shared-switch"><input id="show-2f" type="checkbox" checked><span></span></label></div>
           <div class="control" style="margin-top:14px">
             <label><span>Zoom de la grille</span><span class="manual-value"><input id="zoom-value" type="number" min="60" max="180" step="5" value="100" aria-label="Zoom de la grille en pourcentage"><small>%</small></span></label>
             <input id="zoom" type="range" min="60" max="180" step="5" value="100">
           </div>
           <div class="align-actions">
-            <button id="center-axis" class="ghost-button" type="button" title="Centrer verticalement l’axe optique">Centrer l’axe</button>
-            <button id="center-lens" class="ghost-button" type="button" title="Centrer horizontalement la lentille">Centrer la lentille</button>
+            <button id="center-axis" class="ghost-button shared-button" type="button" title="Centrer verticalement l’axe optique">Centrer l’axe</button>
+            <button id="center-lens" class="ghost-button shared-button" type="button" title="Centrer horizontalement la lentille">Centrer la lentille</button>
           </div>
-          <button id="reset" class="ghost-button" style="width:100%;margin-top:10px">Réinitialiser</button>
+          <button id="reset" class="ghost-button shared-button" style="width:100%;margin-top:10px">Réinitialiser</button>
         </section>
 
-        <section class="panel-section">
+        <section class="panel-section shared-panel-section">
           <h3 class="panel-title">Résultats</h3>
           <div class="metrics">
             <div class="metric"><span>Position OA′</span><strong id="image-distance">—</strong></div>
@@ -237,13 +204,10 @@
             <div class="metric"><span>Vergence C</span><strong id="power">—</strong></div>
             <div class="metric result"><span>Nature de l’image</span><strong id="image-nature">—</strong></div>
           </div>
-          <div class="equation">\[
-            \frac{1}{\overline{OA'}} - \frac{1}{\overline{OA}} = \frac{1}{f'}
-            \qquad \gamma = \frac{\overline{A'B'}}{\overline{AB}} = \frac{\overline{OA'}}{\overline{OA}}
-          \]</div>
+          <div class="equation" aria-label="Relation de conjugaison et grandissement">1/OA′ − 1/OA = 1/f′ &nbsp; · &nbsp; γ = A′B′/AB = OA′/OA</div>
         </section>
 
-        <section class="panel-section">
+        <section class="panel-section shared-panel-section">
           <div class="hint"><span class="hint-icon">i</span><span>Les tracés utilisent l’approximation de Gauss : rayons paraxiaux et lentille mince.</span></div>
         </section>
       </aside>

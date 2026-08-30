@@ -1,11 +1,129 @@
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('/fonts/dm_sans_variable.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: Manrope;
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('/fonts/manrope_variable.ttf') format('truetype');
+}
+
 :root {
+  color-scheme: light;
   color: #16221e;
   background: #f4f1e8;
-  font-family: system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  --ink: #16221e;
+  --muted: #65726c;
+  --paper: #f4f1e8;
+  --panel: rgba(255,255,255,.88);
+  --line: #d8ddd7;
+  --accent: #ef6a47;
+  --accent-2: #0d8f80;
+  --ray-1: #ef6545;
+  --ray-2: #168f84;
+  --ray-3: #7367d8;
+  --image: #a83f79;
+  --lens: #2373b8;
+  --grid: rgba(31, 52, 45, .08);
+  --canvas-bg: #fbfcfa;
+  --shadow: 0 18px 50px rgba(35, 49, 43, .10);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+.shared-surface {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.shared-button {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.shared-panel-section {
+  padding: 17px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shared-panel-section:last-child {
+  border-bottom: 0;
+}
+
+.shared-switch {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.shared-switch input {
+  position: absolute;
+  opacity: 0;
+}
+
+.shared-switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #ccd3cf;
+  cursor: pointer;
+  transition: .18s;
+}
+
+.shared-switch span::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  content: '';
+  transition: .18s;
+}
+
+.shared-switch input:checked + span {
+  background: var(--accent-2);
+}
+
+.shared-switch input:checked + span::after {
+  transform: translateX(16px);
 }
 
 main {
