@@ -13,8 +13,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: volta-cli/action@v4
       - run: corepack enable
-      - run: yarn install --immutable
-      - run: yarn playwright install --with-deps chromium
-      - run: yarn typecheck
-      - run: yarn test
-      - run: yarn build
+      - run: corepack yarn install --immutable
+      - run: corepack yarn playwright install --with-deps chromium
+      - run: corepack yarn typecheck
+      - run: corepack yarn test
+      - run: corepack yarn build
