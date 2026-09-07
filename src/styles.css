@@ -126,7 +126,7 @@ button {
   transform: translateX(16px);
 }
 
-main {
+main:not(.app) {
   max-width: 48rem;
   margin: 0 auto;
   padding: 4rem 1.5rem;

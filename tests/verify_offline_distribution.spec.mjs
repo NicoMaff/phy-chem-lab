@@ -62,3 +62,10 @@ test('opens the ray-construction module locally with its interactive controls', 
   await expect(page.getByRole('button', { name: 'Copier le schéma' })).toBeVisible();
   expect(requests.filter((requestUrl) => !requestUrl.startsWith('file:'))).toEqual([]);
 });
+
+test('lets the scientific scene use the available space on a wide window', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(pathToFileURL(rayConstructionPath).href);
+
+  expect(await page.locator('#optic-canvas').evaluate((canvas) => canvas.clientWidth)).toBeGreaterThan(1000);
+});
