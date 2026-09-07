@@ -9,7 +9,7 @@ export default defineConfig({
         home: resolve(import.meta.dirname, 'index.html'),
         teacherCatalog: resolve(import.meta.dirname, 'enseignants/index.html'),
         activityCatalog: resolve(import.meta.dirname, 'activites/index.html'),
-        rayConstruction: resolve(import.meta.dirname, 'enseignants/construction-rayons/index.html'),
+        rayConstruction: resolve(import.meta.dirname, 'prototype-optique.html'),
       },
     },
   },

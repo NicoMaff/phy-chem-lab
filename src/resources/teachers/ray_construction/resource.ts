@@ -6,5 +6,5 @@ export const resource: ResourceMetadata = {
   description: 'Composez un schéma scientifique de la formation d’une image par une lentille convergente.',
   kind: 'teacher-module',
   pedagogicalModel: 'Lentille mince convergente et approximation de Gauss',
-  entryPoint: './construction-rayons/index.html',
+  entryPoint: '../prototype-optique.html',
 };

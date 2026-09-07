@@ -7,7 +7,7 @@ const projectRoot = resolve(import.meta.dirname, '..');
 const entryPagePath = resolve(projectRoot, 'dist/index.html');
 const teacherCatalogPath = resolve(projectRoot, 'dist/enseignants/index.html');
 const activityCatalogPath = resolve(projectRoot, 'dist/activites/index.html');
-const rayConstructionPath = resolve(projectRoot, 'dist/enseignants/construction-rayons/index.html');
+const rayConstructionPath = resolve(projectRoot, 'dist/prototype-optique.html');
 
 test.beforeAll(() => {
   execFileSync('yarn', ['build'], {
@@ -48,4 +48,24 @@ test('shows a discovered teaching module and an empty activity catalog', async (
 
   await page.goto(pathToFileURL(activityCatalogPath).href);
   await expect(page.getByText('Aucune activité élève n’est encore disponible.')).toBeVisible();
+});
+
+test('opens the ray-construction module locally with its interactive controls', async ({ page }) => {
+  const requests = [];
+
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto(pathToFileURL(teacherCatalogPath).href);
+  await page.getByRole('link', { name: 'Construction des rayons lumineux' }).click();
+
+  await page.getByRole('tab', { name: 'Rayons depuis l’infini' }).click();
+  await expect(page.getByRole('button', { name: '+ Ajouter un rayon aléatoire' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Copier le schéma' })).toBeVisible();
+  expect(requests.filter((requestUrl) => !requestUrl.startsWith('file:'))).toEqual([]);
+});
+
+test('lets the scientific scene use the available space on a wide window', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(pathToFileURL(rayConstructionPath).href);
+
+  expect(await page.locator('#optic-canvas').evaluate((canvas) => canvas.clientWidth)).toBeGreaterThan(1000);
 });
