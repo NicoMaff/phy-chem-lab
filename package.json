@@ -8,6 +8,7 @@
     "node": "26.8.1"
   },
   "scripts": {
+    "prototype:regression": "vite --host 127.0.0.1 --port 5174 --strictPort",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "playwright test"
