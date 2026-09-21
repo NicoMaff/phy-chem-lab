@@ -114,10 +114,15 @@ async function selectActivities(activities: ActivityDefinition[]): Promise<Activ
       return activities;
     }
 
-    const selectedIndexes = selection
-      .split(',')
-      .map((value) => Number.parseInt(value.trim(), 10) - 1)
-      .filter((index) => Number.isInteger(index) && index >= 0 && index < activities.length);
+    const selectedValues = selection.split(',').map((value) => value.trim());
+    if (selectedValues.some((value) => !/^[1-9]\d*$/.test(value))) {
+      throw new Error('La sélection doit contenir des numéros d’activité valides ou * pour toutes.');
+    }
+
+    const selectedIndexes = selectedValues.map((value) => Number.parseInt(value, 10) - 1);
+    if (selectedIndexes.some((index) => index >= activities.length)) {
+      throw new Error('La sélection contient un numéro d’activité inexistant.');
+    }
     const selectedActivities = [...new Set(selectedIndexes)].map((index) => activities[index]);
 
     if (selectedActivities.length === 0) {
@@ -130,6 +135,40 @@ async function selectActivities(activities: ActivityDefinition[]): Promise<Activ
   }
 }
 
+function assertNoExternalDependencies(html: string): void {
+  const dependencyPattern = /<(?:audio|embed|iframe|image|img|input|link|object|script|source|track|video)\b[^>]*\s(href|src|srcset)=["']([^"']+)["']/gi;
+  for (const match of html.matchAll(dependencyPattern)) {
+    const [, attributeName, dependencyUrl] = match;
+    if (attributeName.toLowerCase() === 'srcset' && /(?:https?:)?\/\//i.test(dependencyUrl)) {
+      throw new Error(`Une dépendance externe empêche l’export autonome : ${dependencyUrl}`);
+    }
+    if (!dependencyUrl.startsWith('data:') && !dependencyUrl.startsWith('#')) {
+      throw new Error(`Une dépendance externe ou non intégrée empêche l’export autonome : ${dependencyUrl}`);
+    }
+  }
+
+  const cssUrlPattern = /(?:@import\s+(?:url\()?|url\()\s*["']?([^"')\s]+)["']?\s*\)?/gi;
+  const stylePattern = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+  for (const styleMatch of html.matchAll(stylePattern)) {
+    for (const match of styleMatch[1].matchAll(cssUrlPattern)) {
+      const dependencyUrl = match[1];
+      if (!dependencyUrl.startsWith('data:') && !dependencyUrl.startsWith('#')) {
+        throw new Error(`Une dépendance CSS externe ou non intégrée empêche l’export autonome : ${dependencyUrl}`);
+      }
+    }
+  }
+
+  const inlineStylePattern = /\sstyle=(["'])([\s\S]*?)\1/gi;
+  for (const styleMatch of html.matchAll(inlineStylePattern)) {
+    for (const match of styleMatch[2].matchAll(cssUrlPattern)) {
+      const dependencyUrl = match[1];
+      if (!dependencyUrl.startsWith('data:') && !dependencyUrl.startsWith('#')) {
+        throw new Error(`Une dépendance CSS externe ou non intégrée empêche l’export autonome : ${dependencyUrl}`);
+      }
+    }
+  }
+}
+
 async function buildActivity(activity: ActivityDefinition, outputDirectory: string): Promise<{ fileName: string; size: number }> {
   const standaloneExport = activity.resource.standaloneExport;
   if (standaloneExport === undefined) {
@@ -139,24 +178,23 @@ async function buildActivity(activity: ActivityDefinition, outputDirectory: stri
   const sourcePath = resolve(dirname(activity.resourcePath), standaloneExport.source);
   const temporaryDirectory = resolve(tmpdir(), `phy-chem-lab-export-${randomUUID()}`);
 
-  await build({
-    base: './',
-    configFile: false,
-    publicDir: false,
-    root: projectRoot,
-    build: {
-      assetsInlineLimit: Number.POSITIVE_INFINITY,
-      cssCodeSplit: false,
-      emptyOutDir: true,
-      outDir: temporaryDirectory,
-      rollupOptions: {
-        input: sourcePath,
-        output: { inlineDynamicImports: true },
-      },
-    },
-  });
-
   try {
+    await build({
+      base: './',
+      configFile: false,
+      publicDir: false,
+      root: projectRoot,
+      build: {
+        assetsInlineLimit: Number.POSITIVE_INFINITY,
+        cssCodeSplit: false,
+        emptyOutDir: true,
+        outDir: temporaryDirectory,
+        rollupOptions: {
+          input: sourcePath,
+          output: { inlineDynamicImports: true },
+        },
+      },
+    });
     const builtHtmlPath = resolve(temporaryDirectory, relative(projectRoot, sourcePath));
     const builtHtml = await readFile(builtHtmlPath, 'utf8');
     const assetTagPattern = /<link rel="stylesheet"(?: crossorigin)? href="([^"]+)">|<script type="module"(?: crossorigin)? src="([^"]+)"><\/script>/g;
@@ -177,6 +215,7 @@ async function buildActivity(activity: ActivityDefinition, outputDirectory: stri
 
       outputHtml = outputHtml.replace('</head>', `<script>${mathJaxScript}</script>\n  </head>`);
     }
+    assertNoExternalDependencies(outputHtml);
 
     const fileName = toFileName(activity.resource.id);
     const destinationPath = resolve(outputDirectory, fileName);
