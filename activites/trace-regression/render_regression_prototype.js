@@ -133,21 +133,22 @@ function renderPlot(result) {
   if (result.fit) {
     const min = Math.min(...result.used.map((point) => point.x));
     const max = Math.max(...result.used.map((point) => point.x));
-    line = `<line x1="${projectX(min)}" y1="${projectY(result.fit.slope * min + result.fit.intercept)}" x2="${projectX(max)}" y2="${projectY(result.fit.slope * max + result.fit.intercept)}" stroke="#168578" stroke-width="2.5" />`;
+    line = `<line class="plot-regression-line" x1="${projectX(min)}" y1="${projectY(result.fit.slope * min + result.fit.intercept)}" x2="${projectX(max)}" y2="${projectY(result.fit.slope * max + result.fit.intercept)}" stroke="#168578" stroke-width="2.5" />`;
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 510" role="img" aria-label="${escape(`Graphique : ${axisLabel('y')} en fonction de ${axisLabel('x')}`)}" class="scatter-plot">
+  const lineDelay = Math.min(points.length * 80 + 180, 900);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 510" role="img" aria-label="${escape(`Graphique : ${axisLabel('y')} en fonction de ${axisLabel('x')}`)}" class="scatter-plot" style="--line-delay:${lineDelay}ms">
     <title>${escape(state.title || 'Mesures expérimentales')}</title><desc>${points.length} mesures ; ${result.used.length} incluses dans l’ajustement. Les valeurs sont accessibles dans le tableau.</desc>
     <rect width="900" height="510" fill="#fffefa"/><defs><clipPath id="plot-bounds"><rect x="85" y="67" width="750" height="365" /></clipPath></defs>
     <g font-family="Arial, sans-serif" font-size="13" fill="#718078">
     ${xTicks.map((x) => `<line x1="${projectX(x)}" y1="67" x2="${projectX(x)}" y2="432" stroke="#e5e9e2"/><text x="${projectX(x)}" y="458" text-anchor="middle">${format(x, 5)}</text>`).join('')}
     ${yTicks.map((y) => `<line x1="85" y1="${projectY(y)}" x2="835" y2="${projectY(y)}" stroke="#e5e9e2"/><text x="68" y="${projectY(y) + 4}" text-anchor="end">${format(y, 5)}</text>`).join('')}
     <path d="M85 67 V432 H835" stroke="#9ba9a0" fill="none"/><text x="85" y="34" fill="#263e33" font-size="16" font-weight="600">${escape(axisLabel('y'))}</text><text x="835" y="494" text-anchor="end" fill="#263e33" font-size="16" font-weight="600">${escape(axisLabel('x'))}</text></g>
-    <g clip-path="url(#plot-bounds)">${line}${points.map((point) => `<g data-point="${point.id}" tabindex="0" role="button" aria-label="Mesure ${state.rows.findIndex((row) => row.id === point.id) + 1} : ${format(point.x)}${axisUnit('x') ? ` ${escape(axisUnit('x'))}` : ''}, ${format(point.y)}${axisUnit('y') ? ` ${escape(axisUnit('y'))}` : ''}${point.included ? '' : ', exclue'}" style="cursor:pointer"><title>${escape(`${axisSymbol('x')} = ${format(point.x)}${axisUnit('x') ? ` ${axisUnit('x')}` : ''} ; ${axisSymbol('y')} = ${format(point.y)}${axisUnit('y') ? ` ${axisUnit('y')}` : ''}`)}</title><circle cx="${projectX(point.x)}" cy="${projectY(point.y)}" r="14" fill="${state.selectedRow === point.id ? '#ffe1bd' : 'transparent'}"/><circle cx="${projectX(point.x)}" cy="${projectY(point.y)}" r="5.5" fill="${point.included ? '#df784c' : '#fffefa'}" stroke="${point.included ? '#bc582e' : '#a6afa8'}" stroke-width="2" /></g>`).join('')}</g>
+    <g clip-path="url(#plot-bounds)">${line}${points.map((point, index) => `<g class="plot-point" style="--point-delay:${index * 80}ms;cursor:pointer" data-point="${point.id}" tabindex="0" role="button" aria-label="Mesure ${state.rows.findIndex((row) => row.id === point.id) + 1} : ${format(point.x)}${axisUnit('x') ? ` ${escape(axisUnit('x'))}` : ''}, ${format(point.y)}${axisUnit('y') ? ` ${escape(axisUnit('y'))}` : ''}${point.included ? '' : ', exclue'}"><title>${escape(`${axisSymbol('x')} = ${format(point.x)}${axisUnit('x') ? ` ${axisUnit('x')}` : ''} ; ${axisSymbol('y')} = ${format(point.y)}${axisUnit('y') ? ` ${axisUnit('y')}` : ''}`)}</title><circle cx="${projectX(point.x)}" cy="${projectY(point.y)}" r="14" fill="${state.selectedRow === point.id ? '#ffe1bd' : 'transparent'}"/><circle cx="${projectX(point.x)}" cy="${projectY(point.y)}" r="5.5" fill="${point.included ? '#df784c' : '#fffefa'}" stroke="${point.included ? '#bc582e' : '#a6afa8'}" stroke-width="2" /></g>`).join('')}</g>
     ${points.length ? '' : '<text x="460" y="240" text-anchor="middle" fill="#7d8b82" font-family="Arial, sans-serif" font-size="18">Vos mesures apparaîtront ici</text>'}</svg>`;
 }
 
 function renderGraph() {
-  return `<section class="graph-panel"><div class="graph-heading"><div><span class="eyebrow">REPRÉSENTATION GRAPHIQUE</span><h2 data-graph-title>${escape(state.title || 'Mesures expérimentales')}</h2></div><span class="axis-label" data-axis-function>${escape(axisSymbol('y'))} = f(${escape(axisSymbol('x'))})</span></div><div data-plot></div><div class="graph-footer"><div class="legend"><span><i class="point-key"></i> Mesures</span><span><i class="line-key"></i> Ajustement</span></div><span data-plot-status></span></div></section>`;
+  return `<section class="graph-panel"><div class="graph-heading"><div><span class="eyebrow">REPRÉSENTATION GRAPHIQUE</span><h2 data-graph-title>${escape(state.title || 'Mesures expérimentales')}</h2></div><div class="graph-heading-actions"><span class="axis-label" data-axis-function>${escape(axisSymbol('y'))} = f(${escape(axisSymbol('x'))})</span><button type="button" class="graph-replay" data-action="replay-animation">Rejouer ↺</button></div></div><div data-plot></div><div class="graph-footer"><div class="legend"><span><i class="point-key"></i> Mesures</span><span><i class="line-key"></i> Ajustement</span></div><span data-plot-status></span></div></section>`;
 }
 
 function VariantA() {
@@ -254,6 +255,7 @@ root.addEventListener('click', (event) => {
   if (action === 'add') { const id = state.nextId++; state.rows.push({ id, x: '', y: '', included: true }); render(); root.querySelector(`input[data-row="${id}"][data-field="x"]`).focus(); }
   if (action === 'new') { state.rows = Array.from({ length: 5 }, () => ({ id: state.nextId++, x: '', y: '', included: true })); state.title = ''; state.selectedRow = null; render(); }
   if (action === 'drawer') { state.showData = !state.showData; render(); }
+  if (action === 'replay-animation') { updateLive(); }
   if (action === 'paste' || action === 'close-paste') { state.showPaste = action === 'paste'; render(); }
   if (action === 'import') {
     const lines = document.querySelector('#paste-values').value.trim().split(/\r?\n/).filter((line) => line.trim());

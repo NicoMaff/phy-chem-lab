@@ -83,8 +83,18 @@ tr.selected { background: #faf0df; }
 .graph-heading { display: flex; align-items: center; justify-content: space-between; padding: 22px 27px 0; gap: 15px; }
 .graph-heading .eyebrow { font-size: 9px; margin-bottom: 7px; }
 .graph-heading h2 { font-size: 14px; }
+.graph-heading-actions { display: flex; align-items: center; gap: 9px; }
+.graph-replay { border: 1px solid #e2e5dc; border-radius: 6px; background: #f5f6f0; padding: 6px 9px; color: #52675a; font-size: 10px; white-space: nowrap; }
 .axis-label { border: 1px solid #e2e5dc; border-radius: 6px; background: #f5f6f0; padding: 6px 10px; color: #52675a; font-family: Georgia, serif; font-size: 14px; white-space: nowrap; }
 .scatter-plot { display: block; width: 100%; height: auto; }
+.scatter-plot .plot-point { opacity: 0; transform-box: fill-box; transform-origin: center; animation: plot-point-in .46s cubic-bezier(.2,.8,.2,1) var(--point-delay) both; }
+.scatter-plot .plot-regression-line { stroke-dasharray: 900; stroke-dashoffset: 900; animation: plot-line-draw .82s ease-out var(--line-delay) both; }
+@keyframes plot-point-in { 0% { opacity: 0; transform: scale(.35); } 70% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes plot-line-draw { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .scatter-plot .plot-point { opacity: 1; animation: none; }
+  .scatter-plot .plot-regression-line { stroke-dashoffset: 0; animation: none; }
+}
 .graph-footer { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 1px 28px 20px; color: #8a948a; font-size: 10px; }
 .legend { display: flex; gap: 17px; white-space: nowrap; }
 .legend > span { display: flex; gap: 7px; align-items: center; }
@@ -134,6 +144,8 @@ tr.selected { background: #faf0df; }
 .focus-chart .scatter-plot { max-height: 63vh; min-height: 380px; }
 .focus-chart .graph-panel { border-radius: 0; border: 0; border-top: 2px solid var(--lab-green); border-bottom: 1px solid var(--lab-border); }
 .focus-chart .graph-heading .eyebrow, .focus-chart .axis-label { display: none; }
+.focus-chart .graph-heading-actions { gap: 0; }
+.focus-chart .graph-replay { background: transparent; border-color: transparent; color: #7a897c; }
 .focus-chart .graph-heading h2 { font-size: 12px; color: #798774; font-weight: 500; }
 .focus-result { position: absolute; top: 58px; right: 35px; border-left: 3px solid var(--lab-teal); padding: 11px 20px; background: #fffefae6; pointer-events: none; }
 .focus-result .result-stat { display: none; }
@@ -234,6 +246,8 @@ tr.selected { background: #faf0df; }
   .measurements { padding: 20px; }
   .graph-heading { padding: 20px 18px 5px; }
   .graph-heading h2 { font-size: 12px; }
+  .graph-heading-actions { align-self: stretch; justify-content: space-between; }
+  .graph-replay { padding: 5px 7px; }
   .graph-footer { align-items: flex-start; flex-direction: column; gap: 10px; padding: 4px 20px 18px; }
   .scatter-plot { min-height: 245px; }
   .results { gap: 20px 10px; }
