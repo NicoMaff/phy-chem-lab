@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Module enseignant : synthèse additive des lumières et objets sous éclairage coloré." />
+    <title>Lumières et objets colorés — PhyChem Lab</title>
+  </head>
+  <body>
+    <main class="app color-app">
+      <header class="color-header">
+        <div>
+          <a class="back-link" href="../index.html">Espace enseignant</a>
+          <h1>Lumières et objets colorés</h1>
+          <p>Comparez un mélange de lumières et la couleur d’un objet éclairé.</p>
+        </div>
+        <button class="shared-button" id="reset-session" type="button">Réinitialiser</button>
+      </header>
+      <div class="color-tabs" role="tablist" aria-label="Expériences sur les couleurs">
+        <button id="mixing-tab" role="tab" aria-selected="true" aria-controls="experiment-panel" type="button">Superposer des lumières</button>
+        <button id="objects-tab" role="tab" aria-selected="false" aria-controls="experiment-panel" tabindex="-1" type="button">Éclairer des objets</button>
+      </div>
+      <section id="experiment-panel" role="tabpanel" aria-labelledby="mixing-tab" class="color-workbench">
+        <div class="color-scene-column">
+          <div class="color-scene-shell" id="scene-shell">
+            <div class="color-scene-toolbar">
+              <h2 id="scene-heading">Synthèse additive</h2>
+              <button class="shared-button" id="fullscreen-scene" type="button">Plein écran</button>
+            </div>
+            <div class="color-scene-body">
+              <svg id="color-scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="group" aria-label="Scène scientifique interactive"></svg>
+              <aside class="color-fullscreen-controls" aria-label="Éclairage en plein écran">
+                <label for="fullscreen-light-preset">Éclairage rapide</label>
+                <select id="fullscreen-light-preset" aria-label="Éclairage en plein écran"></select>
+              </aside>
+            </div>
+            <p class="color-scene-hint" id="scene-hint">Faites glisser les zones colorées. Au clavier : sélectionnez une zone avec Tab, puis utilisez les flèches.</p>
+          </div>
+          <div class="color-export-row">
+            <span>Exporter le schéma scientifique</span>
+            <button class="shared-button" id="export-svg" type="button">SVG</button>
+            <button class="shared-button" id="export-png" type="button">PNG</button>
+          </div>
+          <div class="color-observation" id="observation" aria-live="polite" aria-atomic="true"></div>
+        </div>
+        <aside class="color-controls" aria-label="Réglages de l’expérience">
+          <section class="shared-panel-section">
+            <h2>Lumières</h2>
+            <p class="color-help">Réglez l’intensité de chaque composante.</p>
+            <div id="light-controls"></div>
+            <label class="color-select-label" for="light-preset">Éclairage rapide</label>
+            <select id="light-preset">
+              <option value="white">Blanc · R + V + B</option>
+              <option value="red">Rouge</option>
+              <option value="green">Vert</option>
+              <option value="blue">Bleu</option>
+              <option value="yellow">Jaune · R + V</option>
+              <option value="cyan">Cyan · V + B</option>
+              <option value="magenta">Magenta · R + B</option>
+              <option value="off">Aucune lumière</option>
+              <option value="custom" disabled>Intensités personnalisées</option>
+            </select>
+          </section>
+          <section class="shared-panel-section" id="position-controls">
+            <h2>Disposition</h2>
+            <div class="color-layout-buttons">
+              <button class="shared-button" data-layout="overlap" type="button">Superposer</button>
+              <button class="shared-button" data-layout="separate" type="button">Séparer</button>
+              <button class="shared-button" data-layout="aligned" type="button">Aligner les centres</button>
+            </div>
+          </section>
+          <section class="shared-panel-section">
+            <h2>Présentation</h2>
+            <label class="color-check"><input id="show-explanations" type="checkbox" checked /> Afficher les explications</label>
+            <label class="color-check"><input id="show-labels" type="checkbox" checked /> Nommer les couleurs dans la scène</label>
+          </section>
+          <section class="shared-panel-section color-model-note">
+            <h2>Modèle pédagogique</h2>
+            <p>Trois composantes idéales : rouge, vert et bleu. Les objets diffusent certaines composantes et absorbent les autres, sans fluorescence.</p>
+            <p>Pas de lumière ambiante. Les pigments réels, la perception et le rendu d’un projecteur peuvent différer.</p>
+          </section>
+        </aside>
+      </section>
+      <p class="color-status" id="color-status" role="status"></p>
+    </main>
+    <script type="module" src="/src/resources/teachers/color_superposition/present_colors.ts"></script>
+  </body>
+</html>

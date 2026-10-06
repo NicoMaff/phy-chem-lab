@@ -22,6 +22,8 @@ dist/
 build/
 coverage/
 test-results/
+.impeccable/review/
+.impeccable/hook.cache.json
 
 # Environment files
 .env
