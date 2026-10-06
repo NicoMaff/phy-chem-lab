@@ -1,0 +1,18 @@
+{
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "enseignants/couleurs/index.html"
+        ],
+        "createdAt": "2026-10-05T14:15:17.352Z",
+        "reason": "Agent et revue indépendante : faux positif du scan HTML isolé ; colors.css définit h1 avec clamp(1.5rem, 2.3vw, 2.25rem), soit 24 à 36 px contre un corps de 16 px. Hiérarchie confirmée sur les captures desktop et mobile."
+      }
+    ]
+  }
+}

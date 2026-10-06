@@ -10,6 +10,7 @@ export default defineConfig({
         teacherCatalog: resolve(import.meta.dirname, 'enseignants/index.html'),
         activityCatalog: resolve(import.meta.dirname, 'activites/index.html'),
         rayConstruction: resolve(import.meta.dirname, 'prototype-optique.html'),
+        colorSuperposition: resolve(import.meta.dirname, 'enseignants/couleurs/index.html'),
       },
     },
   },
